@@ -1,7 +1,7 @@
 
 
-# #朱一鸣：写爬取代码能爬取每个主网页，从主网页查看该页中物品信息，进入物品详细页面进行爬取，爬完后以此类推直至爬到本页最后一个物品跳转到下一页。
-# #朱一鸣：爬取每个物品共有的信息和物品图片链接,打印爬取进度。
+# #朱一鸣：写爬取代码能爬取每个主网页，从主网页查看该页中物品信息，进入物品详细页面进行爬取,自动获取每个商品自己的信息，爬完后以此类推直至爬到本页最后一个物品跳转到下一页。
+# #朱一鸣：爬取每个物品自己的信息和物品图片链接,打印爬取进度。
 # #知乎狗
 # #解决重复爬取第一个文物的问题
 import undetected_chromedriver as uc
@@ -57,56 +57,59 @@ def safe_get_text(element, default=""):
         print(f"获取文本时出错: {str(e)}")
         return default
 
-def get_field_by_label(driver, label_text, default="未找到"):
-    """通过标签文本查找对应的数据字段"""
-    print(f"正在查找字段: '{label_text}'")
+def get_all_fields(driver):
+    """获取页面上所有可用的字段和值，保持原始字段名"""
+    fields_data = {}
     try:
-        # 寻找包含指定标签的数据项
+        # 获取所有数据项
         data_items = driver.find_elements(By.CSS_SELECTOR, "div.object-detail__data-item")
         print(f"找到 {len(data_items)} 个数据项")
         
-        if not data_items:
-            print(f"警告: 未找到任何数据项，字段 '{label_text}' 查找失败")
-            return default
-            
-        for i, item in enumerate(data_items):
+        for item in data_items:
             try:
-                # 在每个数据项中查找标签
+                # 获取标签名
                 label = item.find_element(By.CSS_SELECTOR, "dt.object-detail__data-term")
-                label_content = label.text.strip() if label else ""
-                print(f"  数据项 #{i+1} 标签: '{label_content}'")
+                label_text = label.text.strip()
                 
-                if label and label_text.lower() in label_content.lower():
-                    print(f"  找到匹配的标签: '{label_content}'")
-                    # 找到匹配的标签，获取所有对应的描述
-                    descriptions = item.find_elements(By.CSS_SELECTOR, "dd.object-detail__data-description")
-                    print(f"  该标签下找到 {len(descriptions)} 个描述项")
+                # 获取该标签对应的所有描述
+                descriptions = item.find_elements(By.CSS_SELECTOR, "dd.object-detail__data-description")
+                description_texts = [desc.text.strip() for desc in descriptions if desc.text.strip()]
+                
+                # 将字段和值添加到字典中，使用原始字段名
+                if description_texts:
+                    fields_data[label_text] = " | ".join(description_texts)
+                    print(f"发现字段: {label_text} = {fields_data[label_text][:100]}...")
                     
-                    if descriptions:
-                        # 将所有描述文本合并
-                        texts = [desc.text.strip() for desc in descriptions if desc.text.strip()]
-                        for j, text in enumerate(texts):
-                            print(f"    描述 #{j+1}: '{text}'")
-                        
-                        result = " | ".join(texts) if texts else default
-                        print(f"  合并结果: '{result}'")
-                        return result
-                    else:
-                        print(f"  警告: 标签 '{label_content}' 下未找到描述项")
             except (NoSuchElementException, StaleElementReferenceException) as e:
-                print(f"  处理数据项 #{i+1} 时出错: {str(e)}")
+                print(f"处理数据项时出错: {str(e)}")
                 continue
-        
-        print(f"未找到标签为 '{label_text}' 的数据项，返回默认值")
+                
+        return fields_data
     except Exception as e:
-        print(f"查找字段 '{label_text}' 时出错: {str(e)}")
+        print(f"获取字段数据时出错: {str(e)}")
+        return {}
+def print_item_fields(item_data, page_num, item_index):
+    """打印物品的所有字段信息"""
+    print(f"\n{'='*50}")
+    print(f"第 {page_num} 页，第 {item_index} 个物品字段详情")
+    print(f"标题: {item_data.get('标题', '无标题')}")
+    print(f"链接: {item_data.get('链接', '无链接')}")
+    print('-'*50)
+    print("字段列表:")
     
-    return default
-
-
+    # 遍历所有字段（除了标题、图片URL和链接）
+    for field, value in sorted(item_data.items()):
+        if field not in ['标题', '图片URL', '链接']:
+            # 如果值太长，截断显示
+            value_display = value[:100] + '...' if len(str(value)) > 100 else value
+            print(f"{field}: {value_display}")
+    
+    print(f"{'='*50}\n")
 def scrape_british_museum():
     print("初始化无检测Chrome浏览器...")
     all_items = []
+    # 用于记录所有遇到的字段
+    all_encountered_fields = set()
     driver = None
 
     try:
@@ -123,8 +126,6 @@ def scrape_british_museum():
         print("浏览器初始化成功")
         
         base_url = "https://www.britishmuseum.org/collection/search?keyword=chinese&place=China&view=grid&sort=object_name__asc&page="
-        #输入爬取的开始页数和爬取总页数的页数
-        # 例如：page_num = 1，max_pages = 1：从第一页开始爬数据，一共爬一页。
         page_num = 1
         max_pages = 1
 
@@ -135,7 +136,7 @@ def scrape_british_museum():
                 time.sleep(random.uniform(8, 12))
                 print(f"第 {page_num} 页加载完成，开始提取数据...")
 
-                # 使用新的等待函数获取展品列表
+                # 获取展品列表
                 items = wait_and_find_elements(driver, By.CSS_SELECTOR, ".teaser__wrapper")
 
                 if not items:
@@ -145,89 +146,64 @@ def scrape_british_museum():
                 
                 print(f"找到 {len(items)} 个展品项目。")
                 
-                # 存储当前页面的链接以便稍后处理
+                # 收集当前页面所有物品的链接
                 item_links = []
-                for item_index, item in enumerate(items, start=1):
+                for item in items:
                     try:
                         title_elem = item.find_element(By.CSS_SELECTOR, ".teaser__title a")
                         if title_elem:
                             link = title_elem.get_attribute("href")
-                            if link and link not in item_links:  # 避免重复链接
+                            if link and link not in item_links:
                                 item_links.append(link)
                     except Exception as e:
-                        print(f"第 {page_num} 页，第 {item_index} 个物品获取链接时出错: {str(e)}")
+                        print(f"获取链接时出错: {str(e)}")
                         continue
                 
                 print(f"成功获取 {len(item_links)} 个链接")
                 
-                # 遍历所有获取到的链接
+                # 处理每个物品
                 for item_index, link in enumerate(item_links, start=1):
                     try:
-                        print(f"第 {page_num} 页，第 {item_index} 个物品，进入物品页面: {link}")
+                        print(f"\n处理第 {page_num} 页，第 {item_index} 个物品: {link}")
                         driver.get(link)
-                        # 使用随机等待减轻服务器负担
                         time.sleep(random.uniform(8, 12))
 
-                        # 提取信息
-                        try:
-                            # 获取标题
-                            title_element = wait_and_find_element(driver, By.CSS_SELECTOR, "h2 .vterm, h1.h2")
-                            title = safe_get_text(title_element, "无标题")
-                            print(f"第 {page_num} 页，第 {item_index} 个物品，标题: {title}")
+                        # 获取基本信息
+                        title_element = wait_and_find_element(driver, By.CSS_SELECTOR, "h2 .vterm, h1.h2")
+                        title = safe_get_text(title_element, "无标题")
+                        
+                        img_elem = wait_and_find_element(driver, By.CSS_SELECTOR, "div.object-detail__image img")
+                        image = img_elem.get_attribute("src") if img_elem else "无图片"
 
-                            # 获取图片URL
-                            try:
-                                img_elem = wait_and_find_element(driver, By.CSS_SELECTOR, "div.object-detail__image img")
-                                image = img_elem.get_attribute("src") if img_elem else "无图片"
-                                print(f"第 {page_num} 页，第 {item_index} 个物品，图片URL: {image}")
-                            except Exception as e1:
-                                print(f"第 {page_num} 页，第 {item_index} 个物品，获取图片失败: {str(e1)}")
-                                image = "无法获取图片"
+                        # 初始化物品数据
+                        item_data = {
+                            "标题": title,
+                            "图片URL": image,
+                            "链接": link
+                        }
 
-                            # 使用新函数获取各个字段
-                            fields = [
-                                ("物品类型", "Object Type"),
-                                ("博物馆编号", "Museum number"),
-                                ("描述", "Description"),
-                                ("发现地点", "Findspot"),
-                                ("材料", "Materials"),
-                                ("尺寸", "Dimensions"),
-                                ("位置", "Location"),
-                                ("获取名称", "Acquisition name"),
-                                ("获取日期", "Acquisition date"),
-                                ("部门", "Department"),
-                                ("登记号", "Registration number"),
-                            ]
-                            item_data = {"标题": title, "图片URL": image, "链接": link}
+                        # 动态获取所有字段数据
+                        fields_data = get_all_fields(driver)
+                        
+                        # 更新遇到的所有字段集合
+                        all_encountered_fields.update(fields_data.keys())
+                        
+                        # 将字段数据添加到物品数据中
+                        item_data.update(fields_data)
+                        print_item_fields(item_data, page_num, item_index)
+                        all_items.append(item_data)
+                        print(f"第 {page_num} 页，第 {item_index} 个物品数据已添加: {title}")
+                        print(f"该物品包含 {len(fields_data)} 个字段")
 
-                            for field_name, label_text in fields:
-                                try:
-                                    value = get_field_by_label(driver, label_text)
-                                    item_data[field_name] = value
-                                    print(f"第 {page_num} 页，第 {item_index} 个物品，{field_name}: {value}")
-                                except Exception as e:
-                                    print(f"第 {page_num} 页，第 {item_index} 个物品，获取 {field_name} 时出错: {str(e)}")
-                                    item_data[field_name] = "获取失败"
-
-                            all_items.append(item_data)
-                            print(f"第 {page_num} 页，第 {item_index} 个物品，数据已添加: {title}")
-                            # 添加一个短暂的随机暂停，避免频繁请求
-                            time.sleep(random.uniform(1, 3))
-
-                        except Exception as e:
-                            print(f"第 {page_num} 页，第 {item_index} 个物品，提取信息时出错: {str(e)}")
-                            continue
-
-                    except (StaleElementReferenceException, TimeoutException) as e:
-                        print(f"第 {page_num} 页，第 {item_index} 个物品，处理元素时出错: {str(e)}")
+                    except Exception as e:
+                        print(f"处理物品时出错: {str(e)}")
                         continue
 
                 page_num += 1
-                # 页面间随机等待，减轻服务器负担
                 time.sleep(random.uniform(8, 12))
 
             except Exception as e:
-                print(f"爬取第 {page_num} 页时出错: {str(e)}")
+                print(f"处理第 {page_num} 页时出错: {str(e)}")
                 page_num += 1
                 time.sleep(random.uniform(12, 15))
 
@@ -237,13 +213,19 @@ def scrape_british_museum():
     finally:
         # 保存数据
         if all_items:
+            # 创建DataFrame时使用所有遇到过的字段
             df = pd.DataFrame(all_items)
-            # 保存两个版本的文件，一个完整的
+            
+            # 保存完整版本
             df.to_csv("大英博物馆中国文物_完整版.csv", index=False, encoding="utf-8-sig")
-            # 尝试保存一个不包含空值的简化版本
-            df_no_empty = df.applymap(lambda x: x if x not in ["无描述", "未找到", "无图片", "", "无材料", "无标题"] else None).dropna(how='all', axis=1)
+            
+            # 保存简化版本（去除空值）
+            df_no_empty = df.dropna(how='all', axis=1)
             df_no_empty.to_csv("大英博物馆中国文物_简化版.csv", index=False, encoding="utf-8-sig")
-            print(f"数据已保存到 CSV 文件，总共抓取了 {len(all_items)} 个展品。")
+            
+            print(f"\n数据已保存到CSV文件")
+            print(f"总共抓取了 {len(all_items)} 个展品")
+            print(f"遇到的所有字段: {', '.join(sorted(all_encountered_fields))}")
         
         if driver:
             driver.quit()
