@@ -1,5 +1,5 @@
 
-
+# 129和130行为爬取其实页和一共爬多少页
 # #朱一鸣：写爬取代码能爬取每个主网页，从主网页查看该页中物品信息，进入物品详细页面进行爬取,自动获取每个商品自己的信息，爬完后以此类推直至爬到本页最后一个物品跳转到下一页。
 # #朱一鸣：爬取每个物品自己的信息和物品图片链接,打印爬取进度。
 # #知乎狗
@@ -126,6 +126,7 @@ def scrape_british_museum():
         print("浏览器初始化成功")
         
         base_url = "https://www.britishmuseum.org/collection/search?keyword=chinese&place=China&view=grid&sort=object_name__asc&page="
+        # 爬取其实页和一共爬多少页
         page_num = 1
         max_pages = 1
 
