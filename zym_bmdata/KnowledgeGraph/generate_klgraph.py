@@ -115,7 +115,7 @@ class DataImporter:
         query = """
         MATCH (r:CulturalRelic {relic_id: $relic_id})
         MATCH (m:Material {material_name: $mat_name})
-        MERGE (r)-[:MADE_OF]->(m)
+        MERGE (r)-[:制作材料]->(m)
         """
         with self.neo4j_driver.session() as session:
             session.run(query, relic_id=relic_id, mat_name=mat_name)
@@ -126,7 +126,7 @@ class DataImporter:
         query = """
         MATCH (r:CulturalRelic {relic_id: $relic_id})
         MATCH (d:Dynasty {dynasty_name: $dynasty})
-        MERGE (r)-[:FROM_DYNASTY]->(d)
+        MERGE (r)-[:所处于的朝代]->(d)
         """
         with self.neo4j_driver.session() as session:
             session.run(query, relic_id=relic_id, dynasty=dynasty)
@@ -137,7 +137,7 @@ class DataImporter:
         query = """
         MATCH (r:CulturalRelic {relic_id: $relic_id})
         MATCH (m:Museum {museum_id: $museum_id})
-        MERGE (r)-[:IN_MUSEUM]->(m)
+        MERGE (r)-[:所在博物馆]->(m)
         """
         with self.neo4j_driver.session() as session:
             session.run(query, relic_id=relic_id, museum_id=museum_id)
@@ -155,7 +155,7 @@ class DataImporter:
             query = """
             MATCH (m:Museum {museum_id: $museum_id})
             MATCH (a:Address {address_text: $address})
-            MERGE (m)-[:HAS_ADDRESS]->(a)
+            MERGE (m)-[:所在地址]->(a)
             """
             with self.neo4j_driver.session() as session:
                 result = session.run(query, museum_id=museum_id, address=address)
@@ -174,7 +174,7 @@ class DataImporter:
             query = """
             MATCH (r:CulturalRelic {relic_id: $relic_id})
             MATCH (i:RelicImage {image_id: $image_id})
-            MERGE (r)-[:HAS_IMAGE]->(i)
+            MERGE (r)-[:拥有的图片]->(i)
             """
             with self.neo4j_driver.session() as session:
                 session.run(query, relic_id=relic_id, image_id=image_id)
@@ -190,7 +190,7 @@ class DataImporter:
             query = """
             MATCH (m:Museum {museum_id: $museum_id})
             MATCH (i:MuseumImage {image_id: $image_id})
-            MERGE (m)-[:HAS_IMAGE]->(i)
+            MERGE (m)-[:拥有的图片]->(i)
             """
             with self.neo4j_driver.session() as session:
                 session.run(query, museum_id=museum_id, image_id=image_id)
