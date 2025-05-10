@@ -48,6 +48,7 @@ DELETE r, n;
 // 删除 Dynasty 和相关关系
 MATCH (n:Dynasty)-[r]->()
 DELETE r, n;
+
 MATCH (n:CulturalRelic)
 WHERE NOT (n)--()
 DELETE n;
