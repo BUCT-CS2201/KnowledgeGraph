@@ -20,32 +20,40 @@
 博物馆图片关系：博物馆 (Museum) → 图片 (MuseumImage)
 表示：实体拥有相关的图像资料
 ### 附加说明
-加入新数据前要删除旧数据运行在neo4j中运行以下指令
+加入新数据前要删除旧数据运行在neo4j中运行以下指令：
+
 // 删除 CulturalRelic 和相关关系
+
 MATCH (n:CulturalRelic)-[r]->()
 DELETE r, n;
 
 // 删除 Material 和相关关系
+
 MATCH (n:Material)-[r]->()
 DELETE r, n;
 
 // 删除 Museum 和相关关系
+
 MATCH (n:Museum)-[r]->()
 DELETE r, n;
 
 // 删除 RelicImage 和相关关系
+
 MATCH (n:RelicImage)-[r]->()
 DELETE r, n;
 
 // 删除 MuseumImage 和相关关系
+
 MATCH (n:MuseumImage)-[r]->()
 DELETE r, n;
 
 // 删除 Address 和相关关系
+
 MATCH (n:Address)-[r]->()
 DELETE r, n;
 
 // 删除 Dynasty 和相关关系
+
 MATCH (n:Dynasty)-[r]->()
 DELETE r, n;
 
