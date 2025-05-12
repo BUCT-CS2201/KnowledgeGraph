@@ -14,3 +14,4 @@ for ($i = $startPage; $i -le $($endPage - $aver + 1); $i+=$aver) {
     Start-Process -NoNewWindow -FilePath $pythonPath -ArgumentList $args
     Write-Host "已启动第 $i 页的爬虫进程"
 }
+ 
