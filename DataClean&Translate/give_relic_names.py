@@ -41,7 +41,7 @@ def add_name(text):
 
 # 翻译
 for former_column in column_to_change:
-    df[former_column] = df[former_column].apply(
+    df['name'] = df[former_column].apply(
     lambda x: add_name(x) if pd.notnull(x) else None
 )
 
