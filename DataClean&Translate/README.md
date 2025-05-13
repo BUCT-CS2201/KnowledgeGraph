@@ -1,3 +1,5 @@
+# 先清洗再翻译，最后选用取名程序。  
+give_relic_names.py可以直接覆盖原'name'列  
 # 如果API不能使用  
 备选API  
 sk-6cfc266025c046b3a9168c5d709c1f84  
