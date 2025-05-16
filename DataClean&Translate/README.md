@@ -6,8 +6,10 @@ give_relic_names.py可以直接覆盖原'name'列
   
 name.py和name_add.py是两个取名程序  
 需要先运行name根据.csv文件的description列取名，当存在description长度过短情况下运行name_add，直接用其代替文物名称  
-  
+
+下面两个程序翻译完了用  
 delete()().py是一个删除重复括号项的程序（针对大英博物馆清洗不到位的数据）  
+delete《》(...).py是处理11号博物馆遗留问题的程序
 # 如果API不能使用  
 备选API  
 sk-6cfc266025c046b3a9168c5d709c1f84  
