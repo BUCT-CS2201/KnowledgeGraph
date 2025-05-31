@@ -1,3 +1,4 @@
+# 构建三元组和存入图数据库
 import mysql.connector
 from neo4j import GraphDatabase
 
@@ -332,3 +333,11 @@ if __name__ == '__main__':
     importer.import_data()
     importer.close()
     print("程序执行完毕")
+
+
+
+
+
+
+
+
